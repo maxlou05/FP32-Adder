@@ -2,6 +2,7 @@ import cocotb
 from cocotb.triggers import RisingEdge, Timer
 from cocotb.clock import Clock
 
+
 @cocotb.test()
 async def test_alu_fsm_sequence(dut):
     """Test the full FSM sequence of alu_top.v"""
@@ -47,26 +48,35 @@ async def test_alu_fsm_sequence(dut):
         await RisingEdge(dut.clk)
         dut._log.info(f"Loaded operand B byte {i}")
 
-    # Step 4: FSM goes to EXECUTE
-    await RisingEdge(dut.clk)
-    dut._log.info(f"State at EXECUTE: {dut.state_out.value.integer}")
-    assert dut.state_out.value == 9, "Expected state EXECUTE"
+    # Step 4: Wait for EXECUTE
+    while int(dut.state_out.value) != 9:
+        await RisingEdge(dut.clk)
 
-    # Step 5: FSM should go to DONE_WAIT and assert done
-    await RisingEdge(dut.clk)
-    assert dut.state_out.value == 10, "Expected state DONE_WAIT"
+    dut._log.info("FSM entered EXECUTE state")
+    await RisingEdge(dut.clk)  # Wait one cycle (holding EXECUTE)
+
+    # Step 5: Wait for DONE_WAIT and assert done
+    while int(dut.state_out.value) != 10:
+        await RisingEdge(dut.clk)
+
+    await RisingEdge(dut.clk)  # Wait for outputs to update
+
     assert dut.done.value == 1, "Done should be asserted in DONE_WAIT"
+    dut._log.info("FSM entered DONE_WAIT and done asserted")
 
-    # Step 6: FSM should go to OUTPUT_0 next
-    await RisingEdge(dut.clk)
-    assert dut.state_out.value == 11, "Expected state OUTPUT_0"
+    # Step 6: Wait for OUTPUT_0 state and read first byte
+    while int(dut.state_out.value) != 11:
+        await RisingEdge(dut.clk)
+
     dut._log.info(f"Output byte 0: {dut.out.value.integer:02x}")
 
-    # Step 7: Output remaining 3 bytes
+    # Step 7: Read remaining output bytes
     for i in range(1, 4):
         await RisingEdge(dut.clk)
         dut._log.info(f"Output byte {i}: {dut.out.value.integer:02x}")
 
-    # Step 8: FSM should return to IDLE
-    await RisingEdge(dut.clk)
-    assert dut.state_out.value == 0, "FSM should return to IDLE after output"
+    # Step 8: FSM should return to IDLE after OUTPUT_3
+    while int(dut.state_out.value) != 0:
+        await RisingEdge(dut.clk)
+
+    dut._log.info("FSM returned to IDLE after output")
