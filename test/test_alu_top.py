@@ -47,19 +47,26 @@ async def test_alu_fsm_sequence(dut):
         await RisingEdge(dut.clk)
         dut._log.info(f"Loaded operand B byte {i}")
 
-    # Step 4: FSM goes to EXECUTE for 1 cycle
+    # Step 4: FSM goes to EXECUTE
     await RisingEdge(dut.clk)
     dut._log.info(f"State at EXECUTE: {dut.state_out.value.integer}")
-    await RisingEdge(dut.clk)  # Should be OUTPUT_0 now
+    assert dut.state_out.value == 9, "Expected state EXECUTE"
 
-    assert dut.state_out.value == 10, "Expected state OUTPUT_0"
-    assert dut.done.value == 1, "Done should go high at OUTPUT_0"
+    # Step 5: FSM should go to DONE_WAIT and assert done
+    await RisingEdge(dut.clk)
+    assert dut.state_out.value == 10, "Expected state DONE_WAIT"
+    assert dut.done.value == 1, "Done should be asserted in DONE_WAIT"
 
-    # Step 5: Read all 4 output bytes
-    for i in range(4):
+    # Step 6: FSM should go to OUTPUT_0 next
+    await RisingEdge(dut.clk)
+    assert dut.state_out.value == 11, "Expected state OUTPUT_0"
+    dut._log.info(f"Output byte 0: {dut.out.value.integer:02x}")
+
+    # Step 7: Output remaining 3 bytes
+    for i in range(1, 4):
         await RisingEdge(dut.clk)
-        dut._log.info(f"Result byte {i}: {dut.out.value.integer:02x}")
+        dut._log.info(f"Output byte {i}: {dut.out.value.integer:02x}")
 
-    # Step 6: Confirm IDLE again
+    # Step 8: FSM should return to IDLE
     await RisingEdge(dut.clk)
     assert dut.state_out.value == 0, "FSM should return to IDLE after output"
