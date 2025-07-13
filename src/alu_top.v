@@ -12,7 +12,6 @@ module alu_top (
     output wire [3:0] state_out
 );
 
-    // FSM state encoding
     parameter IDLE        = 4'd0;
     parameter LOAD_A_0    = 4'd1;
     parameter LOAD_A_1    = 4'd2;
@@ -23,20 +22,20 @@ module alu_top (
     parameter LOAD_B_2    = 4'd7;
     parameter LOAD_B_3    = 4'd8;
     parameter EXECUTE     = 4'd9;
-    parameter DONE_WAIT   = 4'd10; // Assert 'done' before output
+    parameter DONE_WAIT   = 4'd10;
     parameter OUTPUT_0    = 4'd11;
     parameter OUTPUT_1    = 4'd12;
     parameter OUTPUT_2    = 4'd13;
     parameter OUTPUT_3    = 4'd14;
 
-    // Internal state
     reg [3:0]  state;
     reg [31:0] operand_a;
     reg [31:0] operand_b;
     reg [31:0] result;
 
-    assign state_out = state;
+    reg        execute_flag;  // NEW: holds EXECUTE state 1 cycle
 
+    assign state_out = state;
     wire sub = opcode;
     wire [31:0] addsub_result;
 
@@ -49,16 +48,18 @@ module alu_top (
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            state      <= IDLE;
-            operand_a  <= 32'd0;
-            operand_b  <= 32'd0;
-            result     <= 32'd0;
-            out        <= 8'd0;
-            done       <= 1'b0;
+            state         <= IDLE;
+            operand_a     <= 32'd0;
+            operand_b     <= 32'd0;
+            result        <= 32'd0;
+            out           <= 8'd0;
+            done          <= 1'b0;
+            execute_flag  <= 1'b0;
         end else begin
             case (state)
                 IDLE: begin
-                    done <= 1'b0;
+                    done         <= 1'b0;
+                    execute_flag <= 1'b0;
                     if (start)
                         state <= LOAD_A_0;
                 end
@@ -74,34 +75,40 @@ module alu_top (
                 LOAD_B_3: begin operand_b[31:24]  <= in; state <= EXECUTE;  end
 
                 EXECUTE: begin
-                    result <= addsub_result;
-                    done   <= 1'b0;
-                    state  <= DONE_WAIT;
+                    if (!execute_flag) begin
+                        result        <= addsub_result;  // Capture result
+                        execute_flag  <= 1'b1;           // Hold state for 1 cycle
+                        state         <= EXECUTE;
+                    end else begin
+                        execute_flag  <= 1'b0;
+                        state         <= DONE_WAIT;
+                    end
                 end
 
                 DONE_WAIT: begin
-                    done <= 1'b1;      // Signal ready
+                    done  <= 1'b1;          // Assert done
+                    out   <= result[7:0];   // First byte ready
                     state <= OUTPUT_0;
                 end
 
                 OUTPUT_0: begin
-                    out <= result[7:0];
-                    done <= 1'b0;
+                    done  <= 1'b0;          // Done drops after first byte
+                    out   <= result[7:0];
                     state <= OUTPUT_1;
                 end
 
                 OUTPUT_1: begin
-                    out <= result[15:8];
+                    out   <= result[15:8];
                     state <= OUTPUT_2;
                 end
 
                 OUTPUT_2: begin
-                    out <= result[23:16];
+                    out   <= result[23:16];
                     state <= OUTPUT_3;
                 end
 
                 OUTPUT_3: begin
-                    out <= result[31:24];
+                    out   <= result[31:24];
                     state <= IDLE;
                 end
 
