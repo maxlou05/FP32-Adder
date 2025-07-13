@@ -32,10 +32,10 @@ module alu_top (
     reg [31:0] operand_a;
     reg [31:0] operand_b;
     reg [31:0] result;
-
-    reg        execute_flag;  // NEW: holds EXECUTE state 1 cycle
+    reg        execute_flag;
 
     assign state_out = state;
+
     wire sub = opcode;
     wire [31:0] addsub_result;
 
@@ -76,9 +76,9 @@ module alu_top (
 
                 EXECUTE: begin
                     if (!execute_flag) begin
-                        result        <= addsub_result;  // Capture result
-                        execute_flag  <= 1'b1;           // Hold state for 1 cycle
-                        state         <= EXECUTE;
+                        result        <= addsub_result;
+                        execute_flag  <= 1'b1;
+                        state         <= EXECUTE;  // Hold EXECUTE for 1 cycle
                     end else begin
                         execute_flag  <= 1'b0;
                         state         <= DONE_WAIT;
@@ -86,30 +86,29 @@ module alu_top (
                 end
 
                 DONE_WAIT: begin
-                    done  <= 1'b1;          // Assert done
-                    out   <= result[7:0];   // First byte ready
-                    state <= OUTPUT_0;
+                    done  <= 1'b1;       // Signal result ready
+                    state <= OUTPUT_0;   // Next cycle begins output
                 end
 
                 OUTPUT_0: begin
-                    done  <= 1'b0;          // Done drops after first byte
-                    out   <= result[7:0];
+                    done  <= 1'b0;           // Drop done now
+                    out   <= result[7:0];    // Output byte 0
                     state <= OUTPUT_1;
                 end
 
                 OUTPUT_1: begin
-                    out   <= result[15:8];
+                    out   <= result[15:8];   // Output byte 1
                     state <= OUTPUT_2;
                 end
 
                 OUTPUT_2: begin
-                    out   <= result[23:16];
+                    out   <= result[23:16];  // Output byte 2
                     state <= OUTPUT_3;
                 end
 
                 OUTPUT_3: begin
-                    out   <= result[31:24];
-                    state <= IDLE;
+                    out   <= result[31:24];  // Output byte 3
+                    state <= IDLE;           // Return to IDLE
                 end
 
                 default: state <= IDLE;
