@@ -2,12 +2,23 @@ import cocotb
 from cocotb.triggers import RisingEdge, Timer
 from cocotb.clock import Clock
 
+
+# Debug monitor: Logs state every clock cycle
+async def monitor_states(dut, num_cycles):
+    for cycle in range(num_cycles):
+        await RisingEdge(dut.clk)
+        dut._log.info(f"[Cycle {cycle}] FSM State: {dut.state_out.value.integer}")
+
+
 @cocotb.test()
 async def test_alu_fsm_sequence(dut):
     """Test the full FSM sequence of alu_top.v"""
 
     # Start a 10ns period clock on dut.clk
     cocotb.start_soon(Clock(dut.clk, 10, units="ns").start())
+
+    # Start monitoring FSM state
+    cocotb.start_soon(monitor_states(dut, 100))  # Monitor first 100 cycles
 
     # Initialize all inputs
     dut.in_.value = 0
@@ -20,7 +31,6 @@ async def test_alu_fsm_sequence(dut):
     # Apply reset
     dut._log.info("Applying reset")
     dut.rst_n.value = 0
-    await RisingEdge(dut.clk)
     await RisingEdge(dut.clk)
     dut.rst_n.value = 1
     await RisingEdge(dut.clk)
@@ -47,10 +57,11 @@ async def test_alu_fsm_sequence(dut):
         await RisingEdge(dut.clk)
         dut._log.info(f"Loaded operand B byte {i}")
 
-    # Step 4: FSM goes to EXECUTE for 1 cycle
+    # Step 4: FSM should be in EXECUTE
     await RisingEdge(dut.clk)
-    dut._log.info(f"State at EXECUTE: {dut.state_out.value.integer}")
-    await RisingEdge(dut.clk)  # Should be OUTPUT_0 now
+    dut._log.info(f"FSM State at EXECUTE: {dut.state_out.value.integer}")
+
+    await RisingEdge(dut.clk)  # Should move to OUTPUT_0
 
     assert dut.state_out.value == 10, "Expected state OUTPUT_0"
     assert dut.done.value == 1, "Done should go high at OUTPUT_0"
