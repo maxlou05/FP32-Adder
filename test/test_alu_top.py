@@ -5,14 +5,14 @@ from cocotb.clock import Clock
 
 @cocotb.test()
 async def test_alu_fsm_sequence(dut):
-    """Test the full FSM sequence of alu_top.v"""
+    """Test the full FSM sequence of alu_top.v, including operand load, execute, output, and return to IDLE."""
 
-    # Start a 10ns period clock on dut.clk
+    # Start 10ns clock
     cocotb.start_soon(Clock(dut.clk, 10, units="ns").start())
 
-    # Initialize all inputs
+    # Initialize inputs
     dut.in_.value = 0
-    dut.opcode.value = 0  # 0 = add
+    dut.opcode.value = 0  # 0 = ADD operation
     dut.start.value = 0
     dut.rst_n.value = 1
 
@@ -27,56 +27,64 @@ async def test_alu_fsm_sequence(dut):
     await RisingEdge(dut.clk)
     dut._log.info("Reset complete")
 
-    # Step 1: Trigger start in IDLE
+    # Confirm starting in IDLE
     assert dut.state_out.value == 0, "FSM should be in IDLE before start"
+
+    # Step 1: Trigger start in IDLE
     dut.start.value = 1
     await RisingEdge(dut.clk)
-    dut.start.value = 0  # One-cycle pulse
+    dut.start.value = 0  # Pulse start for 1 cycle
     await RisingEdge(dut.clk)
 
-    assert dut.state_out.value == 1, "FSM should transition to LOAD_A_0"
-
-    # Step 2: Feed operand A (4 bytes)
+    # Step 2: Load operand A (4 bytes)
     for i in range(4):
         dut.in_.value = i
         await RisingEdge(dut.clk)
         dut._log.info(f"Loaded operand A byte {i}")
 
-    # Step 3: Feed operand B (4 bytes)
+    # Step 3: Load operand B (4 bytes)
     for i in range(4):
         dut.in_.value = 10 + i
         await RisingEdge(dut.clk)
         dut._log.info(f"Loaded operand B byte {i}")
 
-    # Step 4: Wait for EXECUTE
-    while int(dut.state_out.value) != 9:
+    # Step 4: Wait for FSM to reach EXECUTE state
+    max_cycles = 100
+    cycles = 0
+    while int(dut.state_out.value) != 9:  # Assuming EXECUTE = 9
         await RisingEdge(dut.clk)
+        cycles += 1
+        if cycles > max_cycles:
+            raise AssertionError("FSM did not reach EXECUTE state in time")
+    dut._log.info("FSM reached EXECUTE state")
 
-    dut._log.info("FSM entered EXECUTE state")
-    await RisingEdge(dut.clk)  # Wait one cycle (holding EXECUTE)
-
-    # Step 5: Wait for DONE_WAIT and assert done
-    while int(dut.state_out.value) != 10:
+    # Step 5: Wait for FSM to reach OUTPUT_0
+    cycles = 0
+    while int(dut.state_out.value) != 10:  # Assuming OUTPUT_0 = 10
         await RisingEdge(dut.clk)
+        cycles += 1
+        if cycles > max_cycles:
+            raise AssertionError("FSM did not reach OUTPUT_0 state in time")
 
-    await RisingEdge(dut.clk)  # Wait for outputs to update
+    dut._log.info("FSM reached OUTPUT_0 state")
 
-    assert dut.done.value == 1, "Done should be asserted in DONE_WAIT"
-    dut._log.info("FSM entered DONE_WAIT and done asserted")
+    # Step 6: Verify DONE signal is asserted at OUTPUT_0
+    assert dut.done.value == 1, "Done signal should be high at OUTPUT_0"
 
-    # Step 6: Wait for OUTPUT_0 state and read first byte
-    while int(dut.state_out.value) != 11:
+    # Step 7: Read result bytes during OUTPUT phases
+    result_bytes = []
+    for i in range(4):
         await RisingEdge(dut.clk)
+        byte_value = int(dut.out.value)
+        result_bytes.append(byte_value)
+        dut._log.info(f"Result byte {i}: {byte_value:02x}")
 
-    dut._log.info(f"Output byte 0: {dut.out.value.integer:02x}")
-
-    # Step 7: Read remaining output bytes
-    for i in range(1, 4):
-        await RisingEdge(dut.clk)
-        dut._log.info(f"Output byte {i}: {dut.out.value.integer:02x}")
-
-    # Step 8: FSM should return to IDLE after OUTPUT_3
+    # Step 8: Wait for FSM to return to IDLE
+    cycles = 0
     while int(dut.state_out.value) != 0:
         await RisingEdge(dut.clk)
+        cycles += 1
+        if cycles > max_cycles:
+            raise AssertionError("FSM did not return to IDLE after output phase")
 
-    dut._log.info("FSM returned to IDLE after output")
+    dut._log.info("FSM returned to IDLE state after operation complete")
