@@ -33,6 +33,7 @@ async def test_alu_fsm_sequence(dut):
 
     # Step 1: Trigger start in IDLE (write high for 1 cycle)
     assert dut.state_out.value.integer == 0, "FSM should be in IDLE before start"
+    assert dut.done.value == 0
     dut.start.value = 1
 
     await RisingEdge(dut.clk)
@@ -46,6 +47,7 @@ async def test_alu_fsm_sequence(dut):
         dut.in_.value = i
         dut._log.info(f"Loading operand A byte {i}")
         assert dut.state_out.value.integer == i + 1, "Incorrect state, should be loading operand A"
+        assert dut.done.value == 0
         await RisingEdge(dut.clk)
         await ReadWrite()
 
@@ -54,19 +56,21 @@ async def test_alu_fsm_sequence(dut):
         dut.in_.value = 10 + i
         dut._log.info(f"Loading operand B byte {i}")
         assert dut.state_out.value.integer == i + 5, "Incorrect state, should be loading operand B"
+        assert dut.done.value == 0
         await RisingEdge(dut.clk)
         await ReadWrite()
 
     # Now in EXECUTE state
     assert dut.state_out.value.integer == 9, "Incorrect state, should be calculating"
+    assert dut.done.value == 0
 
     await RisingEdge(dut.clk)
     await ReadWrite()
 
     # Step 5: Read all 4 output bytes
     for i in range(4):
-        assert dut.done.value == 1, "Done should be high when outputting result"
         assert dut.state_out.value.integer == i + 10, "Incorrect state, should be outputting"
+        assert dut.done.value == 1, "Done should be high when outputting result"
 
         # Log output byte
         dut._log.info(f"Result byte {i}: {dut.out.value.integer:02x}")
@@ -77,7 +81,7 @@ async def test_alu_fsm_sequence(dut):
     assert dut.state_out.value == 0, "FSM should return to IDLE after output phase"
     assert dut.done.value == 0, "Done should be low after returning to IDLE"
 
-    # Step 6: Confirm IDLE again
+    # Confirm still in IDLE if we don't set start to 1
     await RisingEdge(dut.clk)
     await ReadWrite()
     assert dut.state_out.value == 0, "FSM should remain in IDLE until start signal"

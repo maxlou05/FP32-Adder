@@ -64,7 +64,7 @@ module alu_top (
             // FSM: handle each phase of the ALU operation
             case (state)
                 IDLE: begin
-                    done <= 1'b0;  // Reset done signal
+                    done <= 1'b0;  // Reset done signal just in case
                     if (start)     // Wait for start signal
                         state <= LOAD_A_0;
                 end
@@ -85,13 +85,13 @@ module alu_top (
                 EXECUTE: begin
                     result <= addsub_result;   // Capture result TODO: We will need to make sure that fp_addsub finishes within 1 clock cycle
                     state  <= OUTPUT_0;        // Begin output phase
+                    done   <= 1'b1;            // Set 'done' high, which will begin to be high in the next state
                 end
 
                 // Output result byte-by-byte, LSB to MSB
                 OUTPUT_0: begin
                     out        <= result[7:0];   // Send byte 0
                     state      <= OUTPUT_1;
-                    done       <= 1'b1;          // Set 'done' high
                 end
                 OUTPUT_1: begin
                     out        <= result[15:8];  // Send byte 1
@@ -104,6 +104,7 @@ module alu_top (
                 OUTPUT_3: begin
                     out        <= result[31:24]; // Send byte 3
                     state      <= IDLE;          // Go back to IDLE
+                    done       <= 1'b0;          // Set done back to low, which will take effect in the next state
                 end
                 default: begin
                     state <= IDLE;
