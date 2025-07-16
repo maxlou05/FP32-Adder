@@ -31,7 +31,7 @@ module alu_top (
     reg [3:0]  state;       // Current state of ALU
     reg [31:0] operand_a;   // First input operand
     reg [31:0] operand_b;   // Second input operand
-    reg [23:0] result;      // Final result after computation
+    reg [23:0] partial_result;      // Final result after computation
 
     // Decide if operation is subtraction based on opcode
     wire sub = opcode;  // 1 if subtract, 0 if add
@@ -54,12 +54,12 @@ module alu_top (
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             // Reset all internal registers and return to IDLE
-            state      <= IDLE;
-            operand_a  <= 32'd0;
-            operand_b  <= 32'd0;
-            result     <= 32'd0;
-            out        <= 8'd0;
-            done       <= 1'b0;
+            state          <= IDLE;
+            operand_a      <= 32'd0;
+            operand_b      <= 32'd0;
+            partial_result <= 24'd0;
+            out            <= 8'd0;
+            done           <= 1'b0;
         end else begin
             // FSM: handle each phase of the ALU operation
             case (state)
@@ -83,7 +83,7 @@ module alu_top (
 
                 // Perform the selected floating-point operation
                 EXECUTE: begin
-                    result <= addsub_result[31:8];      // Capture result TODO: We will need to make sure that fp_addsub finishes within 1 clock cycle
+                    partial_result <= addsub_result[31:8];      // Capture result TODO: We will need to make sure that fp_addsub finishes within 1 clock cycle
                     state  <= OUTPUT_0;           // Begin output phase
                     done   <= 1'b1;               // Set 'done' high, which will begin to be high in the next state
                     out    <= addsub_result[7:0];  // Set first byte, which will begin to send in the next state
@@ -91,15 +91,15 @@ module alu_top (
 
                 // Output result byte-by-byte, LSB to MSB
                 OUTPUT_0: begin
-                    out        <= result[7:8];   // Set byte 1
+                    out        <= partial_result[7:0];   // Set byte 1
                     state      <= OUTPUT_1;
                 end
                 OUTPUT_1: begin
-                    out        <= result[15:8];  // Set byte 2
+                    out        <= partial_result[15:8];  // Set byte 2
                     state      <= OUTPUT_2;
                 end
                 OUTPUT_2: begin
-                    out        <= result[23:16];  // Set byte 3
+                    out        <= partial_result[23:16];  // Set byte 3
                     state      <= OUTPUT_3;
                 end
                 OUTPUT_3: begin
