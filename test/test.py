@@ -49,31 +49,38 @@ async def test_project(dut):
     dut.uio_in.value = BinaryValue("zzzzz0x0")
 
     # Numbers to add
-    a = 1.234
-    b = 5.678
+    a = 1.5
+    b = 1.75
     expected = a + b
 
     # Load operand A
     for i in range(4):
         assert dut.uio_out.value.binstr[0:4] == BinaryValue(i + 1, n_bits=4, bigEndian=False).binstr, f"Incorrect state when loading operand A byte {i}, uio_out: {dut.uio_out.value.binstr}"
         assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
-        dut.ui_in.value = struct.pack("<f", a)[i]  # Put in little endian to input byte 0 first
+        temp = struct.pack("<f", a)[i]
+        dut.ui_in.value = temp  # Put in little endian to input byte 0 first
+        dut._log.debug(f"Input: {BinaryValue(temp, bigEndian=False)}")
         await RisingEdge(dut.clk)
         await ReadWrite()
+        dut._log.debug(f"operand A: {dut.user_project.u_alu.operand_a.value.binstr}")
 
     # Load operand B
     for i in range(4):
         assert dut.uio_out.value.binstr[0:4] == BinaryValue(i + 5, n_bits=4, bigEndian=False).binstr, f"Incorrect state when loading operand B byte {i}, uio_out: {dut.uio_out.value.binstr}"
         assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
-        dut.ui_in.value = struct.pack("<f", b)[i]
+        temp = struct.pack("<f", b)[i]
+        dut.ui_in.value = temp  # Put in little endian to input byte 0 first
+        dut._log.debug(f"Input: {BinaryValue(temp, bigEndian=False)}")
         await RisingEdge(dut.clk)
         await ReadWrite()
+        dut._log.debug(f"operand B: {dut.user_project.u_alu.operand_b.value.binstr}")
 
     # Wait for execute
     assert dut.uio_out.value.binstr[0:4] == BinaryValue(9, n_bits=4, bigEndian=False).binstr, f"State != EXECUTE, uio_out: {dut.uio_out.value.binstr}"
     assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
     await RisingEdge(dut.clk)
     await ReadWrite()
+    dut._log.debug(f"result: {dut.user_project.u_alu.result.value.binstr}")
 
     # Read outputs
     result = bytearray([0, 0, 0, 0])
