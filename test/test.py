@@ -59,10 +59,10 @@ async def test_project(dut):
         assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
         temp = struct.pack("<f", a)[i]
         dut.ui_in.value = temp  # Put in little endian to input byte 0 first
-        dut._log.debug(f"Input: {BinaryValue(temp, bigEndian=False)}")
+        dut._log.info(f"Input: {BinaryValue(temp, bigEndian=False)}")
         await RisingEdge(dut.clk)
         await ReadWrite()
-        dut._log.debug(f"operand A: {dut.user_project.u_alu.operand_a.value.binstr}")
+        dut._log.info(f"operand A: {dut.user_project.u_alu.operand_a.value.binstr}")
 
     # Load operand B
     for i in range(4):
@@ -70,17 +70,17 @@ async def test_project(dut):
         assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
         temp = struct.pack("<f", b)[i]
         dut.ui_in.value = temp  # Put in little endian to input byte 0 first
-        dut._log.debug(f"Input: {BinaryValue(temp, bigEndian=False)}")
+        dut._log.info(f"Input: {BinaryValue(temp, bigEndian=False)}")
         await RisingEdge(dut.clk)
         await ReadWrite()
-        dut._log.debug(f"operand B: {dut.user_project.u_alu.operand_b.value.binstr}")
+        dut._log.info(f"operand B: {dut.user_project.u_alu.operand_b.value.binstr}")
 
     # Wait for execute
     assert dut.uio_out.value.binstr[0:4] == BinaryValue(9, n_bits=4, bigEndian=False).binstr, f"State != EXECUTE, uio_out: {dut.uio_out.value.binstr}"
     assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
     await RisingEdge(dut.clk)
     await ReadWrite()
-    dut._log.debug(f"result: {dut.user_project.u_alu.result.value.binstr}")
+    dut._log.info(f"result: {dut.user_project.u_alu.result.value.binstr}")
 
     # Read outputs
     result = bytearray([0, 0, 0, 0])
@@ -95,7 +95,7 @@ async def test_project(dut):
     # Make sure returned to IDLE state
     assert dut.uio_out.value.binstr[0:4] == "0000", f"State != IDLE, uio_out: {dut.uio_out.value.binstr}"
     assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
-    dut._log.debug(f"result: {result}")
+    dut._log.info(f"result: {result}")
 
     # Check result
     final_number = struct.unpack("<f", result)[0]
