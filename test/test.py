@@ -55,7 +55,7 @@ async def test_project(dut):
 
     # Load operand A
     for i in range(4):
-        assert dut.uio_out.value.binstr[0:4] == BinaryValue(i + 1, n_bits=4).binstr, f"Incorrect state when loading operand A, uio_out: {dut.uio_out.value.binstr}"
+        assert dut.uio_out.value.binstr[0:4] == BinaryValue(i + 1, n_bits=4, bigEndian=False).binstr, f"Incorrect state when loading operand A byte {i}, uio_out: {dut.uio_out.value.binstr}"
         assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
         dut.uio_in.value = struct.pack("<f", a)[i]  # Put in little endian to input byte 0 first
         await RisingEdge(dut.clk)
@@ -63,14 +63,14 @@ async def test_project(dut):
 
     # Load operand B
     for i in range(4):
-        assert dut.uio_out.value.binstr[0:4] == BinaryValue(i + 5, n_bits=4).binstr, f"Incorrect state when loading operand B, uio_out: {dut.uio_out.value.binstr}"
+        assert dut.uio_out.value.binstr[0:4] == BinaryValue(i + 5, n_bits=4, bigEndian=False).binstr, f"Incorrect state when loading operand B byte {i}, uio_out: {dut.uio_out.value.binstr}"
         assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
         dut.uio_in.value = struct.pack("<f", b)[i]
         await RisingEdge(dut.clk)
         await ReadWrite()
 
     # Wait for execute
-    assert dut.uio_out.value.binstr[0:4] == BinaryValue(9, n_bits=4).binstr, f"State != EXECUTE, uio_out: {dut.uio_out.value.binstr}"
+    assert dut.uio_out.value.binstr[0:4] == BinaryValue(9, n_bits=4, bigEndian=False).binstr, f"State != EXECUTE, uio_out: {dut.uio_out.value.binstr}"
     assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
     await RisingEdge(dut.clk)
     await ReadWrite()
@@ -79,7 +79,7 @@ async def test_project(dut):
     result = bytearray([0, 0, 0, 0])
     for i in range(4):
         result[i] = dut.uo_out.value.integer
-        assert dut.uio_out.value.binstr[0:4] == BinaryValue(i + 10, n_bits=4).binstr, f"Incorrect state when reading result, uio_out: {dut.uio_out.value.binstr}"
+        assert dut.uio_out.value.binstr[0:4] == BinaryValue(i + 10, n_bits=4, bigEndian=False).binstr, f"Incorrect state when reading result byte {i}, uio_out: {dut.uio_out.value.binstr}"
         assert dut.uio_out.value.binstr[4] == '1', f"Done signal != 1, uio_out: {dut.uio_out.value.binstr}"
         await RisingEdge(dut.clk)
         await ReadWrite()
