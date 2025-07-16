@@ -57,7 +57,7 @@ async def test_project(dut):
     for i in range(4):
         assert dut.uio_out.value.binstr[0:4] == BinaryValue(i + 1, n_bits=4, bigEndian=False).binstr, f"Incorrect state when loading operand A byte {i}, uio_out: {dut.uio_out.value.binstr}"
         assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
-        dut.uio_in.value = struct.pack("<f", a)[i]  # Put in little endian to input byte 0 first
+        dut.ui_in.value = struct.pack("<f", a)[i]  # Put in little endian to input byte 0 first
         await RisingEdge(dut.clk)
         await ReadWrite()
 
@@ -65,7 +65,7 @@ async def test_project(dut):
     for i in range(4):
         assert dut.uio_out.value.binstr[0:4] == BinaryValue(i + 5, n_bits=4, bigEndian=False).binstr, f"Incorrect state when loading operand B byte {i}, uio_out: {dut.uio_out.value.binstr}"
         assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
-        dut.uio_in.value = struct.pack("<f", b)[i]
+        dut.ui_in.value = struct.pack("<f", b)[i]
         await RisingEdge(dut.clk)
         await ReadWrite()
 
