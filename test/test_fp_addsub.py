@@ -174,12 +174,12 @@ async def test_both_subnormals(dut):
     await Timer(PERIOD, units='ns')
 
     result = bits_to_float(dut.result.value.integer)
-    assert abs(result - expected) < 1e-6, f"Add 2 subnormal numbers failed: {a} + {b} != {result}"
+    assert abs(result - expected) < 1e-44, f"Add 2 subnormal numbers failed: {a} + {b} != {result}"
 
     expected = a - b
     dut.sub.value = 1
     await Timer(PERIOD, units='ns')
-    assert abs(result - expected) < 1e-6, f"Subtract 2 subnormal numbers failed: {a} - {b} != {result}"
+    assert abs(result - expected) < 1e-44, f"Subtract 2 subnormal numbers failed: {a} - {b} != {result}"
 
 # Test when the result is a subnormal number
 @cocotb.test()
@@ -194,7 +194,7 @@ async def test_sub_become_subnormals(dut):
     await Timer(PERIOD, units='ns')
 
     result = bits_to_float(dut.result.value.integer)
-    assert abs(result - expected) < 1e-6, f"Normalized numbers subtract to obtain subnormal number failed: {a} - {b} != {result}"
+    assert abs(result - expected) < 1e-40, f"Normalized numbers subtract to obtain subnormal number failed: {a} - {b} != {result}"
 
 # Test add a subnormal number to a normalized number
 @cocotb.test()
@@ -209,7 +209,7 @@ async def test_add_subnormal_to_normal(dut):
     await Timer(PERIOD, units='ns')
 
     result = bits_to_float(dut.result.value.integer)
-    assert abs(result - expected) < 1e-6, f"Add subnormal number to normalized number failed: {a} + {b} != {result}"
+    assert abs(result - expected) < 1e-43, f"Add subnormal number to normalized number failed: {a} + {b} != {result}"
 
 # Test Infinities
 @cocotb.test()
