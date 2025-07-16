@@ -28,11 +28,14 @@ async def test_project(dut):
     dut.rst_n.value = 0
     await ClockCycles(dut.clk, 2)
 
-    assert dut.state_out.value.integer == 0, "FSM should be in IDLE before start"
-    assert dut.done.value == 0
     dut.rst_n.value = 1
 
-    dut._log.info("Test project behavior")
+    await RisingEdge(dut.clk)
+    await ReadWrite()
+
+    assert dut.state_out.value.integer == 0, "FSM should be in IDLE before start"
+    assert dut.done.value == 0
+    dut._log.info("Reset complete - Test project behavior")
 
     # Begin the test by inputting start (io[2]) (indicate to ALU that we want to start inputting numbers)
     dut.uio_in.value = BinaryValue("zzzzz1x0")  # Set io[0] = 0 for add, leave the output ones to be driven by design

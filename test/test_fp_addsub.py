@@ -179,6 +179,8 @@ async def test_both_subnormals(dut):
     expected = a - b
     dut.sub.value = 1
     await Timer(PERIOD, units='ns')
+
+    result = bits_to_float(dut.result.value.integer)
     assert abs(result - expected) < 1e-44, f"Subtract 2 subnormal numbers failed: {a} - {b} != {result}"
 
 # Test when the result is a subnormal number

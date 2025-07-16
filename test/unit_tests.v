@@ -61,12 +61,12 @@ module unit_tests ();
     alu_top state_machine (
         .clk       (clk),      // Clock input
         .rst_n     (rst_n),    // Active-low reset input
-        .in        (in_),   // 8-bit input data bus for operand bytes
-        .out       (out),   // 8-bit output data bus for result bytes
-        .opcode    (opcode),  // 1-bit opcode (0 for add, 1 for subtract)
-        .start     (start),  // 'Start' signal for user to request an operation
-        .done      (done),  // 'Done' signal indicating ready to output data
-        .state_out (state_out)// Current state of the ALU
+        .in        (in_),      // 8-bit input data bus for operand bytes
+        .out       (out),      // 8-bit output data bus for result bytes
+        .opcode    (opcode),   // 1-bit opcode (0 for add, 1 for subtract)
+        .start     (start),    // 'Start' signal for user to request an operation
+        .done      (done),     // 'Done' signal indicating ready to output data
+        .state_out (state_out) // Current state of the ALU
     );
 
 endmodule
