@@ -86,7 +86,7 @@ module alu_top (
                     result <= addsub_result;      // Capture result TODO: We will need to make sure that fp_addsub finishes within 1 clock cycle
                     state  <= OUTPUT_0;           // Begin output phase
                     done   <= 1'b1;               // Set 'done' high, which will begin to be high in the next state
-                    out    <= addsub_result[7:0]  // Set first byte, which will begin to send in the next state
+                    out    <= addsub_result[7:0];  // Set first byte, which will begin to send in the next state
                 end
 
                 // Output result byte-by-byte, LSB to MSB
