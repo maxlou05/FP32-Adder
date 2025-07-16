@@ -33,8 +33,10 @@ async def test_project(dut):
     await RisingEdge(dut.clk)
     await ReadWrite()
 
-    assert dut.state_out.value.integer == 0, "FSM should be in IDLE before start"
-    assert dut.done.value == 0
+    assert dut.uio_oe.value.binstr == "11111000", f"IO line should have [7:3] be outputs, [2:0] be inputs, uio_oe: {dut.uio_oe.value.binstr}"
+
+    assert dut.uio_out.value.binstr[0:4] == "0000", f"State != IDLE, uio_out: {dut.uio_out.value.binstr}"
+    assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
     dut._log.info("Reset complete - Test project behavior")
 
     # Begin the test by inputting start (io[2]) (indicate to ALU that we want to start inputting numbers)
@@ -53,23 +55,23 @@ async def test_project(dut):
 
     # Load operand A
     for i in range(4):
-        assert dut.state_out.value.integer == i + 1
-        assert dut.done.value == 0
+        assert dut.uio_out.value.binstr[0:4] == BinaryValue(i + 1, n_bits=4).binstr, f"Incorrect state when loading operand A, uio_out: {dut.uio_out.value.binstr}"
+        assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
         dut.uio_in.value = struct.pack("<f", a)[i]  # Put in little endian to input byte 0 first
         await RisingEdge(dut.clk)
         await ReadWrite()
 
     # Load operand B
     for i in range(4):
-        assert dut.state_out.value.integer == i + 5
-        assert dut.done.value == 0
+        assert dut.uio_out.value.binstr[0:4] == BinaryValue(i + 5, n_bits=4).binstr, f"Incorrect state when loading operand B, uio_out: {dut.uio_out.value.binstr}"
+        assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
         dut.uio_in.value = struct.pack("<f", b)[i]
         await RisingEdge(dut.clk)
         await ReadWrite()
 
     # Wait for execute
-    assert dut.state_out.value.integer == 9
-    assert dut.done.value == 0
+    assert dut.uio_out.value.binstr[0:4] == BinaryValue(9, n_bits=4).binstr, f"State != EXECUTE, uio_out: {dut.uio_out.value.binstr}"
+    assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
     await RisingEdge(dut.clk)
     await ReadWrite()
 
@@ -77,14 +79,14 @@ async def test_project(dut):
     result = bytearray([0, 0, 0, 0])
     for i in range(4):
         result[i] = dut.uo_out.value.integer
-        assert dut.state_out.value.integer == i + 10
-        assert dut.done.value == 1
+        assert dut.uio_out.value.binstr[0:4] == BinaryValue(i + 10, n_bits=4).binstr, f"Incorrect state when reading result, uio_out: {dut.uio_out.value.binstr}"
+        assert dut.uio_out.value.binstr[4] == '1', f"Done signal != 1, uio_out: {dut.uio_out.value.binstr}"
         await RisingEdge(dut.clk)
         await ReadWrite()
 
     # Make sure returned to IDLE state
-    assert dut.state_out.value.integer == 0
-    assert dut.done.value == 0
+    assert dut.uio_out.value.binstr[0:4] == f"0000", "State != IDLE, uio_out: {dut.uio_out.value.binstr}"
+    assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
 
     # Check result
     final_number = struct.unpack("<f", result)[0]
