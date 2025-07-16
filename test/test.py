@@ -59,7 +59,7 @@ async def test_project(dut):
         assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
         temp = struct.pack("<f", a)[i]
         dut.ui_in.value = temp  # Put in little endian to input byte 0 first
-        dut._log.info(f"Input: {BinaryValue(temp, bigEndian=False)}")
+        dut._log.info(f"Input: {BinaryValue(temp, n_bits=8, bigEndian=False)}")
         await RisingEdge(dut.clk)
         await ReadWrite()
         dut._log.info(f"operand A: {dut.user_project.u_alu.operand_a.value.binstr}")
@@ -70,7 +70,7 @@ async def test_project(dut):
         assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
         temp = struct.pack("<f", b)[i]
         dut.ui_in.value = temp  # Put in little endian to input byte 0 first
-        dut._log.info(f"Input: {BinaryValue(temp, bigEndian=False)}")
+        dut._log.info(f"Input: {BinaryValue(temp, n_bits=8, bigEndian=False)}")
         await RisingEdge(dut.clk)
         await ReadWrite()
         dut._log.info(f"operand B: {dut.user_project.u_alu.operand_b.value.binstr}")
@@ -99,5 +99,4 @@ async def test_project(dut):
 
     # Check result
     final_number = struct.unpack("<f", result)[0]
-    temp = struct.unpack(">f", result)[0]
-    assert abs(final_number - expected) < 1e-6, f"Addition failed: {a} + {b} != {final_number}. {result=}, big-endian:{temp}"
+    assert abs(final_number - expected) < 1e-6, f"Addition failed: {a} + {b} != {final_number}. {result=}"

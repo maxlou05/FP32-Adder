@@ -83,28 +83,28 @@ module alu_top (
 
                 // Perform the selected floating-point operation
                 EXECUTE: begin
-                    result <= addsub_result;   // Capture result TODO: We will need to make sure that fp_addsub finishes within 1 clock cycle
-                    state  <= OUTPUT_0;        // Begin output phase
-                    done   <= 1'b1;            // Set 'done' high, which will begin to be high in the next state
+                    result <= addsub_result;      // Capture result TODO: We will need to make sure that fp_addsub finishes within 1 clock cycle
+                    state  <= OUTPUT_0;           // Begin output phase
+                    done   <= 1'b1;               // Set 'done' high, which will begin to be high in the next state
+                    out    <= addsub_result[7:0]  // Set first byte, which will begin to send in the next state
                 end
 
                 // Output result byte-by-byte, LSB to MSB
                 OUTPUT_0: begin
-                    out        <= result[7:0];   // Send byte 0
+                    out        <= result[15:8];   // Set byte 1
                     state      <= OUTPUT_1;
                 end
                 OUTPUT_1: begin
-                    out        <= result[15:8];  // Send byte 1
+                    out        <= result[23:16];  // Set byte 2
                     state      <= OUTPUT_2;
                 end
                 OUTPUT_2: begin
-                    out        <= result[23:16]; // Send byte 2
+                    out        <= result[31:24];  // Set byte 3
                     state      <= OUTPUT_3;
                 end
                 OUTPUT_3: begin
-                    out        <= result[31:24]; // Send byte 3
-                    state      <= IDLE;          // Go back to IDLE
-                    done       <= 1'b0;          // Set done back to low, which will take effect in the next state
+                    state      <= IDLE;           // Go back to IDLE
+                    done       <= 1'b0;           // Set done back to low, which will take effect in the next state
                 end
                 default: begin
                     state <= IDLE;
