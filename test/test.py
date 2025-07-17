@@ -88,9 +88,9 @@ async def test_project(dut):
     # assert dut.uio_out.value.binstr[0:4] == BinaryValue(9, n_bits=4, bigEndian=False).binstr, f"State != EXECUTE, uio_out: {dut.uio_out.value.binstr}"
     # assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
     dut._log.info(f"state: {dut.uio_out.value.binstr[0:4]}")
+    dut._log.info(f"result: {dut.user_project.u_alu.addsub_result.value.binstr}")
     await RisingEdge(dut.clk)
     await ReadWrite()
-    dut._log.info(f"result: {dut.user_project.u_alu.result.value.binstr}")
 
     # Read outputs
     result = bytearray([0, 0, 0, 0])
