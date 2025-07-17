@@ -36,7 +36,7 @@ async def test_project(dut):
     await ReadWrite()
 
     # assert dut.uio_oe.value.binstr == "11111000", f"IO line should have [7:3] be outputs, [2:0] be inputs, uio_oe: {dut.uio_oe.value.binstr}"
-    dut._log.info(f"rst_n: {dut.rest_n.value}")
+    dut._log.info(f"rst_n: {dut.rst_n.value}")
     dut._log.info(f"io enable: {dut.uio_oe.value.binstr}")
 
     # assert dut.uio_out.value.binstr[0:4] == "0000", f"State != IDLE, uio_out: {dut.uio_out.value.binstr}"
