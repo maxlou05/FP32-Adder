@@ -41,6 +41,7 @@ async def test_project(dut):
 
     # assert dut.uio_out.value.binstr[0:4] == "0000", f"State != IDLE, uio_out: {dut.uio_out.value.binstr}"
     # assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
+    dut._log.info(f"state: {dut.uio_out.value.binstr[0:4]}")
     dut._log.info("Reset complete - Test project behavior")
 
     # Begin the test by inputting start (io[2]) (indicate to ALU that we want to start inputting numbers)
@@ -50,7 +51,6 @@ async def test_project(dut):
     await ReadWrite()
 
     dut._log.info(f"io in: {dut.uio_in.value.binstr}")
-    dut._log.info(f"state: {dut.uio_out.value.binstr[0:4]}")
 
     # Reset start to 0
     dut.uio_in.value = BinaryValue("zzzzz0x0")
@@ -70,7 +70,7 @@ async def test_project(dut):
         dut._log.info(f"Input: {BinaryValue(temp, n_bits=8, bigEndian=False)}")
         await RisingEdge(dut.clk)
         await ReadWrite()
-        dut._log.info(f"operand A: {dut.user_project.u_alu.operand_a.value.binstr}")
+        # dut._log.info(f"operand A: {dut.user_project.u_alu.operand_a.value.binstr}")
 
     # Load operand B
     for i in range(4):
@@ -82,13 +82,13 @@ async def test_project(dut):
         dut._log.info(f"Input: {BinaryValue(temp, n_bits=8, bigEndian=False)}")
         await RisingEdge(dut.clk)
         await ReadWrite()
-        dut._log.info(f"operand B: {dut.user_project.u_alu.operand_b.value.binstr}")
+        # dut._log.info(f"operand B: {dut.user_project.u_alu.operand_b.value.binstr}")
 
     # Wait for execute
     # assert dut.uio_out.value.binstr[0:4] == BinaryValue(9, n_bits=4, bigEndian=False).binstr, f"State != EXECUTE, uio_out: {dut.uio_out.value.binstr}"
     # assert dut.uio_out.value.binstr[4] == '0', f"Done signal != 0, uio_out: {dut.uio_out.value.binstr}"
     dut._log.info(f"state: {dut.uio_out.value.binstr[0:4]}")
-    dut._log.info(f"result: {dut.user_project.u_alu.addsub_result.value.binstr}")
+    # dut._log.info(f"result: {dut.user_project.u_alu.addsub_result.value.binstr}")
     await RisingEdge(dut.clk)
     await ReadWrite()
 
