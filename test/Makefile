@@ -40,7 +40,7 @@ VERILOG_SOURCES += $(PWD)/integration_tests.v
 TOPLEVEL = integration_tests
 
 # MODULE is the basename of the Python test file
-MODULE = test
+MODULE = test_gates
 
 endif
 
