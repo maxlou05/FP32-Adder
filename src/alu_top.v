@@ -25,12 +25,12 @@ module alu_top (
     parameter OUTPUT_0    = 4'd10;  // Output byte 0 of result
     parameter OUTPUT_1    = 4'd11;  // Output byte 1 of result
     parameter OUTPUT_2    = 4'd12;  // Output byte 2 of result
-    parameter OUTPUT_3    = 4'd13;   // Output byte 3 of result
+    parameter OUTPUT_3    = 4'd13;  // Output byte 3 of result
 
     // Register declaration
-    reg [3:0]  state;       // Current state of ALU
-    reg [31:0] operand_a;   // First input operand
-    reg [31:0] operand_b;   // Second input operand
+    reg [3:0]  state;               // Current state of ALU
+    reg [31:0] operand_a;           // First input operand
+    reg [31:0] operand_b;           // Second input operand
     reg [23:0] partial_result;      // Final result after computation
 
     // Decide if operation is subtraction based on opcode
@@ -79,14 +79,14 @@ module alu_top (
                 LOAD_B_0: begin operand_b[7:0]    <= in; state <= LOAD_B_1; end
                 LOAD_B_1: begin operand_b[15:8]   <= in; state <= LOAD_B_2; end
                 LOAD_B_2: begin operand_b[23:16]  <= in; state <= LOAD_B_3; end
-                LOAD_B_3: begin operand_b[31:24]  <= in; state <= EXECUTE; end
+                LOAD_B_3: begin operand_b[31:24]  <= in; state <= EXECUTE;  end
 
                 // Perform the selected floating-point operation
                 EXECUTE: begin
-                    partial_result <= addsub_result[31:8];      // Capture result TODO: We will need to make sure that fp_addsub finishes within 1 clock cycle
-                    state  <= OUTPUT_0;           // Begin output phase
-                    done   <= 1'b1;               // Set 'done' high, which will begin to be high in the next state
-                    out    <= addsub_result[7:0];  // Set first byte, which will begin to send in the next state
+                    partial_result <= addsub_result[31:8];  // Capture result TODO: We will need to make sure that fp_addsub finishes within 1 clock cycle
+                    state  <= OUTPUT_0;                     // Begin output phase
+                    done   <= 1'b1;                         // Set 'done' high, which will begin to be high in the next state
+                    out    <= addsub_result[7:0];           // Set first byte, which will begin to send in the next state
                 end
 
                 // Output result byte-by-byte, LSB to MSB

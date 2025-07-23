@@ -1,10 +1,11 @@
+import math
 import struct                                  # For float <-> binary conversion
 
 import cocotb                                  # Main Cocotb library
 from cocotb.triggers import Timer              # For time-based delays
 
 
-PERIOD = 1000  # clock period in ns
+PERIOD = 40  # clock period in ns
 
 
 # NOTE: cocotb handles the endianness issue, so 240 = 0x00 FF = 00000000 11111111 is inputted as a[16..0] = 00000000 11111111, and not a[16..0] = 11111111 00000000 due to little endianness represents it as 0xFF 00 in memory
@@ -16,9 +17,9 @@ def float_to_bits(f) -> int:
 def bits_to_float(b) -> float:
     return struct.unpack('>f', struct.pack('>I', b))[0]
 
-# Adding two positive numbers
+# Test adding numbers
 @cocotb.test()
-async def test_simple_add(dut):
+async def test_add(dut):
     a, b = 1.25, 2.75             # Input floats
     expected = a + b              # Expected result
 
@@ -27,13 +28,39 @@ async def test_simple_add(dut):
     dut.sub.value = 0               # 0 = add
 
     await Timer(PERIOD, units='ns')      # Wait for result to settle
-
     result = bits_to_float(dut.result.value.integer)  # Convert result back to float
-    assert abs(result - expected) < 1e-6, f"Add failed: {a} + {b} != {result}"
+    assert abs(result - expected) < 1e-6, f"positive + positive failed: {a} + {b} != {result}"
 
-# Subtracting two positive numbers
+    a, b = math.pi, -math.e
+    expected = a + b
+    dut.a.value = float_to_bits(a)
+    dut.b.value = float_to_bits(b)
+
+    await Timer(PERIOD, units='ns')
+    result = bits_to_float(dut.result.value.integer)
+    assert abs(result - expected) < 1e-6, f"positive + negative failed: {a} + {b} != {result}"
+
+    a, b = -2.0, 3.0
+    expected = a + b
+    dut.a.value = float_to_bits(a)
+    dut.b.value = float_to_bits(b)
+
+    await Timer(PERIOD, units='ns')
+    result = bits_to_float(dut.result.value.integer)
+    assert abs(result - expected) < 1e-6, f"negative + positive failed: {a} + {b} != {result}"
+
+    a, b = -4.67e-3, -3.14
+    expected = a + b
+    dut.a.value = float_to_bits(a)
+    dut.b.value = float_to_bits(b)
+
+    await Timer(PERIOD, units='ns')
+    result = bits_to_float(dut.result.value.integer)
+    assert abs(result - expected) < 1e-6, f"negative + negative failed: {a} + {b} != {result}"
+
+# Test subtracting numbers
 @cocotb.test()
-async def test_simple_sub(dut):
+async def test_sub(dut):
     a, b = 5.5, 3.25              # Input floats
     expected = a - b              # Expected result
 
@@ -42,67 +69,50 @@ async def test_simple_sub(dut):
     dut.sub.value = 1               # 1 = subtract
 
     await Timer(PERIOD, units='ns')      # Wait for result
-
     result = bits_to_float(dut.result.value.integer)  # Read output
-    assert abs(result - expected) < 1e-6, f"Sub failed: {a} - {b} != {result}"
+    assert abs(result - expected) < 1e-6, f"positive - positive failed: {a} - {b} != {result}"
 
-@cocotb.test()
-async def test_negative_add(dut):
-    a, b = -2.0, 3.0
-    expected = a + b
-
+    a, b = math.pi, -math.e
+    expected = a - b
     dut.a.value = float_to_bits(a)
     dut.b.value = float_to_bits(b)
-    dut.sub.value = 0
 
     await Timer(PERIOD, units='ns')
-
     result = bits_to_float(dut.result.value.integer)
-    assert abs(result - expected) < 1e-6, f"Neg add failed: {a} + {b} != {result}"
+    assert abs(result - expected) < 1e-6, f"positive - negative failed: {a} - {b} != {result}"
 
-@cocotb.test()
-async def test_add_negative(dut):
-    a, b = -4.67e-3, -3.14
-    expected = a + b
-
-    dut.a.value = float_to_bits(a)
-    dut.b.value = float_to_bits(b)
-    dut.sub.value = 0
-
-    await Timer(PERIOD, units='ns')
-
-    result = bits_to_float(dut.result.value.integer)
-    assert abs(result - expected) < 1e-6, f"Add neg failed: {a} + {b} != {result}"
-
-@cocotb.test()
-async def test_negative_sub(dut):
     a, b = -142.5, 32.89
     expected = a - b
-
     dut.a.value = float_to_bits(a)
     dut.b.value = float_to_bits(b)
-    dut.sub.value = 1
 
     await Timer(PERIOD, units='ns')
-
     result = bits_to_float(dut.result.value.integer)
-    assert abs(result - expected) < 1e-6, f"Neg sub failed: {a} - {b} != {result}"
+    assert abs(result - expected) < 1e-6, f"negative - positive failed: {a} - {b} != {result}"
 
-@cocotb.test()
-async def test_sub_negative(dut):
     a, b = -4.67e-3, -3.14
     expected = a - b
+    dut.a.value = float_to_bits(a)
+    dut.b.value = float_to_bits(b)
+
+    await Timer(PERIOD, units='ns')
+    result = bits_to_float(dut.result.value.integer)
+    assert abs(result - expected) < 1e-6, f"negative - negative failed: {a} - {b} != {result}"
+
+# Test arithmetic with 0
+@cocotb.test()
+async def test_zero_add(dut):
+    a, b = 0.0, 5.0
+    expected = a + b
 
     dut.a.value = float_to_bits(a)
     dut.b.value = float_to_bits(b)
-    dut.sub.value = 1
+    dut.sub.value = 0
 
     await Timer(PERIOD, units='ns')
-
     result = bits_to_float(dut.result.value.integer)
-    assert abs(result - expected) < 1e-6, f"Sub neg failed: {a} - {b} != {result}"
+    assert abs(result - expected) < 1e-6, f"Zero add failed: {a} + {b} != {result}"
 
-# Subtracting a positive number from 0.0
 @cocotb.test()
 async def test_zero_sub(dut):
     a, b = 0.0, 5.0
@@ -113,11 +123,62 @@ async def test_zero_sub(dut):
     dut.sub.value = 1
 
     await Timer(PERIOD, units='ns')
-
     result = bits_to_float(dut.result.value.integer)
     assert abs(result - expected) < 1e-6, f"Zero sub failed: {a} - {b} != {result}"
 
-# Testing rounding cut-off
+@cocotb.test()
+async def test_add_zero(dut):
+    a, b = 5.0, 0.0
+    expected = a + b
+
+    dut.a.value = float_to_bits(a)
+    dut.b.value = float_to_bits(b)
+    dut.sub.value = 0
+
+    await Timer(PERIOD, units='ns')
+    result = bits_to_float(dut.result.value.integer)
+    assert abs(result - expected) < 1e-6, f"Add zero failed: {a} + {b} != {result}"
+
+@cocotb.test()
+async def test_sub_zero(dut):
+    a, b = 5.0, 0.0
+    expected = a - b
+
+    dut.a.value = float_to_bits(a)
+    dut.b.value = float_to_bits(b)
+    dut.sub.value = 1
+
+    await Timer(PERIOD, units='ns')
+    result = bits_to_float(dut.result.value.integer)
+    assert abs(result - expected) < 1e-6, f"Subtract zero failed: {a} - {b} != {result}"
+
+@cocotb.test()
+async def test_add_to_zero(dut):
+    a, b = 5.0, -5.0
+    expected = 0.0
+
+    dut.a.value = float_to_bits(a)
+    dut.b.value = float_to_bits(b)
+    dut.sub.value = 0
+
+    await Timer(PERIOD, units='ns')
+    result = bits_to_float(dut.result.value.integer)
+    assert result == expected, f"Add to zero failed: {a} + {b} != {result}"
+
+@cocotb.test()
+async def test_sub_to_zero(dut):
+    a, b = 5.0, 5.0
+    expected = 0.0
+
+    dut.a.value = float_to_bits(a)
+    dut.b.value = float_to_bits(b)
+    dut.sub.value = 1
+
+    await Timer(PERIOD, units='ns')
+    result = bits_to_float(dut.result.value.integer)
+    assert result == expected, f"Subtract to zero failed: {a} - {b} != {result}"
+
+# Testing rounding cut-off (underflow)
 @cocotb.test()
 async def test_rounding(dut):
     a, b = 1.0, 1e-10
@@ -127,7 +188,6 @@ async def test_rounding(dut):
     dut.sub.value = 0
 
     await Timer(PERIOD, units='ns')
-
     result = bits_to_float(dut.result.value.integer)
     assert result == 1.0, f"Rounding failed: should have rouded off due to large descrepancy in exponent, but got {result}"
 
@@ -142,7 +202,6 @@ async def test_increase_exponent(dut):
     dut.sub.value = 0
 
     await Timer(PERIOD, units='ns')
-
     result = bits_to_float(dut.result.value.integer)
     assert abs(result - expected) < 1e-6, f"Increase exponent failed: {a} + {b} != {result}"
 
@@ -157,7 +216,6 @@ async def test_decrease_exponent(dut):
     dut.sub.value = 1
 
     await Timer(PERIOD, units='ns')
-
     result = bits_to_float(dut.result.value.integer)
     assert abs(result - expected) < 1e-6, f"Decrease exponent failed: {a} - {b} != {result}"
 
@@ -172,14 +230,13 @@ async def test_both_subnormals(dut):
     dut.sub.value = 0
 
     await Timer(PERIOD, units='ns')
-
     result = bits_to_float(dut.result.value.integer)
     assert abs(result - expected) < 1e-44, f"Add 2 subnormal numbers failed: {a} + {b} != {result}"
 
     expected = a - b
     dut.sub.value = 1
-    await Timer(PERIOD, units='ns')
 
+    await Timer(PERIOD, units='ns')
     result = bits_to_float(dut.result.value.integer)
     assert abs(result - expected) < 1e-44, f"Subtract 2 subnormal numbers failed: {a} - {b} != {result}"
 
@@ -194,7 +251,6 @@ async def test_sub_become_subnormals(dut):
     dut.sub.value = 1
 
     await Timer(PERIOD, units='ns')
-
     result = bits_to_float(dut.result.value.integer)
     assert abs(result - expected) < 1e-40, f"Normalized numbers subtract to obtain subnormal number failed: {a} - {b} != {result}"
 
@@ -209,7 +265,6 @@ async def test_add_subnormal_to_normal(dut):
     dut.sub.value = 0
 
     await Timer(PERIOD, units='ns')
-
     result = bits_to_float(dut.result.value.integer)
     assert abs(result - expected) < 1e-43, f"Add subnormal number to normalized number failed: {a} + {b} != {result}"
 
@@ -303,7 +358,7 @@ async def test_input_nan(dut):
     dut.sub.value = 0
     await Timer(PERIOD, units='ns')
     result = bits_to_float(dut.result.value.integer)
-    # Use str since NaN == NaN usually evaluates to false
+    # Use str() since NaN == NaN evaluates to False
     assert str(result) == str(expected), f"Add finite number to -infinity failed: {a} + {b} != {result}"
 
     a, b = 2601.361, float("nan")
@@ -334,10 +389,12 @@ async def test_infinity_sub_infinity(dut):
     result = bits_to_float(dut.result.value.integer)
     assert str(result) == str(expected), f"infinity - infinity failed: {a} - {b} != {result}"
 
-# Test signed zeros and underflow
+# Test signed zeros
+# NOTE: Not really possible to test underflow (i.e. the result is something smaller than a floating point number can represent, very close to 0)
+# due to requiring the input to then have more precision than a floating point itself
 @cocotb.test()
-async def test_negative_zero_add_positive_zero(dut):
-    a, b = -0.0, 0.0
+async def test_result_positive_zero(dut):
+    a, b = 0.0, 0.0
     expected = 0.0
 
     dut.a.value = float_to_bits(a)
@@ -345,13 +402,58 @@ async def test_negative_zero_add_positive_zero(dut):
     dut.sub.value = 0
 
     await Timer(PERIOD, units='ns')
-
     result = bits_to_float(dut.result.value.integer)
-    assert result == expected, f"Add negative zero to positive zero failed: {a} + {b} != {result}"
+    # Use str() since 0.0 == -0.0 evaluates to True
+    assert str(result) == str(expected), f"Result should have been positive zero: {a} + {b} != {result}"
+
+    a, b = 0.0, 0.0
+    dut.a.value = float_to_bits(a)
+    dut.b.value = float_to_bits(b)
+    dut.sub.value = 1
+
+    await Timer(PERIOD, units='ns')
+    result = bits_to_float(dut.result.value.integer)
+    assert str(result) == str(expected), f"Result should have been positive zero: {a} - {b} != {result}"
+
+    a, b = 0.0, -0.0
+    dut.a.value = float_to_bits(a)
+    dut.b.value = float_to_bits(b)
+    dut.sub.value = 0
+
+    await Timer(PERIOD, units='ns')
+    result = bits_to_float(dut.result.value.integer)
+    assert str(result) == str(expected), f"Result should have been positive zero: {a} + {b} != {result}"
+
+    a, b = 0.0, -0.0
+    dut.a.value = float_to_bits(a)
+    dut.b.value = float_to_bits(b)
+    dut.sub.value = 1
+
+    await Timer(PERIOD, units='ns')
+    result = bits_to_float(dut.result.value.integer)
+    assert str(result) == str(expected), f"Result should have been positive zero: {a} - {b} != {result}"
+
+    a, b = -0.0, 0.0
+    dut.a.value = float_to_bits(a)
+    dut.b.value = float_to_bits(b)
+    dut.sub.value = 0
+
+    await Timer(PERIOD, units='ns')
+    result = bits_to_float(dut.result.value.integer)
+    assert str(result) == str(expected), f"Result should have been positive zero: {a} + {b} != {result}"
+
+    a, b = -0.0, -0.0
+    dut.a.value = float_to_bits(a)
+    dut.b.value = float_to_bits(b)
+    dut.sub.value = 1
+
+    await Timer(PERIOD, units='ns')
+    result = bits_to_float(dut.result.value.integer)
+    assert str(result) == str(expected), f"Result should have been positive zero: {a} - {b} != {result}"
 
 @cocotb.test()
 async def test_result_negative_zero(dut):
-    a, b = -0.0, 0.0
+    a, b = -0.0, -0.0
     expected = -0.0
 
     dut.a.value = float_to_bits(a)
@@ -359,6 +461,14 @@ async def test_result_negative_zero(dut):
     dut.sub.value = 0
 
     await Timer(PERIOD, units='ns')
-
     result = bits_to_float(dut.result.value.integer)
-    assert result == expected, f"Result should have been negative zero: {a} + {b} != {result}"
+    assert str(result) == str(expected), f"Result should have been negative zero: {a} + {b} != {result}"
+
+    a, b = -0.0, 0.0
+    dut.a.value = float_to_bits(a)
+    dut.b.value = float_to_bits(b)
+    dut.sub.value = 1
+
+    await Timer(PERIOD, units='ns')
+    result = bits_to_float(dut.result.value.integer)
+    assert str(result) == str(expected), f"Result should have been positive zero: {a} - {b} != {result}"

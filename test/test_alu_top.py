@@ -3,7 +3,7 @@ from cocotb.triggers import RisingEdge, ReadWrite
 from cocotb.clock import Clock
 
 
-PERIOD = 1000  # clock period in ns
+PERIOD = 40  # clock period in ns
 
 
 @cocotb.test()

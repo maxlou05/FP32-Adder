@@ -50,24 +50,24 @@ module fp_addsub (
 
     // Step 2: Align exponents
 
-    wire exp_a_greater = (exp_a >= exp_b); // Determine which operand has greater exponent
+    wire exp_a_greater = (exp_a >= exp_b);  // Determine which operand has greater exponent
     wire [7:0] exp_diff = exp_a_greater ? (exp_a - exp_b) : (exp_b - exp_a); // Compute exponent difference
 
-    wire [23:0] man_a_shifted = exp_a_greater ? man_a : (man_a >> exp_diff); // Shift A's mantissa if needed
-    wire [23:0] man_b_shifted = exp_a_greater ? (man_b >> exp_diff) : man_b; // Shift B's mantissa if needed
+    wire [23:0] man_a_shifted = exp_a_greater ? man_a : (man_a >> exp_diff);  // Shift A's mantissa if needed
+    wire [23:0] man_b_shifted = exp_a_greater ? (man_b >> exp_diff) : man_b;  // Shift B's mantissa if needed
 
-    wire [7:0] exp_base = exp_a_greater ? exp_a : exp_b; // Base exponent used after alignment
+    wire [7:0] exp_base = exp_a_greater ? exp_a : exp_b;  // Base exponent used after alignment
 
     // Step 3: Add/Sub aligned mantissas
 
-    wire [24:0] extended_a = {1'b0, man_a_shifted}; // Extend mantissas to 25 bits (guard bit to capture overflow)
+    wire [24:0] extended_a = {1'b0, man_a_shifted};  // Extend mantissas to 25 bits (guard bit to capture overflow)
     wire [24:0] extended_b = {1'b0, man_b_shifted};
 
-    wire extended_a_greater = (extended_a >= extended_b); // Determine dominant magnitude
-    wire sign_equal = (sign_a == sign_b);                 // True if signs are the same
+    wire extended_a_greater = (extended_a >= extended_b);  // Determine dominant magnitude
+    wire sign_equal = (sign_a == sign_b);                  // True if signs are the same
 
-    wire [24:0] sum = sign_equal ? (extended_a + extended_b) : // If same sign: add
-                      (extended_a_greater ? extended_a - extended_b : extended_b - extended_a); // Else: subtract smaller from larger
+    wire [24:0] sum = sign_equal ? (extended_a + extended_b) :  // If same sign: add
+                      (extended_a_greater ? extended_a - extended_b : extended_b - extended_a);  // Else: subtract smaller from larger
 
     wire sign_res = extended_a_greater ? sign_a : sign_b; // Determine result sign based on dominant operand
 
@@ -78,15 +78,15 @@ module fp_addsub (
     always @(*) begin
         // Special case: NaN or inf - inf
         if (is_nan_a | is_nan_b | (is_inf_a & is_inf_b & (sign_a ^ sign_b))) begin
-            result = 32'h7FC00000; // Return quiet NaN (+qNaN)
+            result = 32'h7FC00000;  // Return quiet NaN (+qNaN)
         end
         // Special case: A is infinity
         else if (is_inf_a) begin
-            result = {sign_a, 8'hFF, 23'd0}; // Return signed infinity
+            result = {sign_a, 8'hFF, 23'd0};  // Return signed infinity
         end
         // Special case: B is infinity
         else if (is_inf_b) begin
-            result = {sign_b, 8'hFF, 23'd0}; // Return signed infinity
+            result = {sign_b, 8'hFF, 23'd0};  // Return signed infinity
         end
         // Special case: -0 + -0 = -0 - +0 = -0, all other signed zero operations result in +0
         // A negative 0 can only appear from this signed zero operation, x - x = x + -x = +0 for any non-zero x

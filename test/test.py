@@ -9,7 +9,7 @@ from cocotb.triggers import ClockCycles, RisingEdge, ReadWrite, Timer
 import struct
 
 
-PERIOD = 1000  # Clock period in ns
+PERIOD = 40  # Clock period in ns
 
 
 @cocotb.test()
