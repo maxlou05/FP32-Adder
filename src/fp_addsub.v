@@ -140,7 +140,7 @@ module fp_addsub (
                 // Subnormal result (exponent becomes <= 0, which is no longer a normalized number)
                 result[31]    = sign_res;       // Sign bit
                 result[30:23] = 8'd0;           // Exponent = 0
-                result[22:0]  = sum[22:0];      // Unshifted mantissa
+                result[22:0]  = sum[22:0] << (exp_base - 1);      // Unshifted mantissa
             end
             else begin
                 result[31]    = sign_res;             // Sign bit
