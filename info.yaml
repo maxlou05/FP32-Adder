@@ -8,7 +8,7 @@ project:
   clock_hz:     20000000       # Clock frequency in Hz (or 0 if not applicable)
 
   # How many tiles your design occupies? A single tile is about 167x108 uM.
-  tiles: "1x2"          # Valid values: 1x1, 1x2, 2x2, 3x2, 4x2, 6x2 or 8x2
+  tiles: "1x1"          # Valid values: 1x1, 1x2, 2x2, 3x2, 4x2, 6x2 or 8x2
 
   # Your top module name must start with "tt_um_". Make it unique by including your github username:
   top_module:  "tt_um_32_bit_fp_ALU_S_M"
@@ -45,8 +45,8 @@ pinout:
   uo[7]: "output_byte[7]"
 
   # Bidirectional pins
-  uio[0]: "(input)  op_code"
-  uio[1]: "unused"
+  uio[0]: "(input)  op_code[0]"
+  uio[1]: "(input)  op_code[1]"
   uio[2]: "(input)  start"
   uio[3]: "(output) done"
   uio[4]: "(output) state[0]"
