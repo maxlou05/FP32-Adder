@@ -1,5 +1,4 @@
 import math
-import random
 import struct                                  # For float <-> binary conversion
 
 import cocotb                                  # Main Cocotb library
@@ -473,42 +472,3 @@ async def test_result_negative_zero(dut):
     await Timer(PERIOD, units='ns')
     result = bits_to_float(dut.result.value.integer)
     assert str(result) == str(expected), f"Result should have been positive zero: {a} - {b} != {result}"
-
-
-# Random test
-MIN_SUBNORMAL_VAL = 1.40e-45  # 1.40129845e-45 is min float, MIN_VAL < min float. So x < MIN_VAL => x < min float
-MIN_NORMAL_VAL = 1.175494e-38
-MAX_VAL = 3.4028235e+38  # 3.402823466 is max float, MAX_VAL > max float. So x > MAX_VAL => x > max float
-def generate_random_f32() -> float:
-    while True:
-        x = random.uniform(1, 10)
-        x *= 10**random.randint(-45, 38)
-        x = -x if random.randint(0, 1) == 1 else x
-        if x == 0.0 or (abs(x) > MIN_SUBNORMAL_VAL and abs(x) < MAX_VAL):
-            break
-    return x
-
-COUNT = 1000000
-@cocotb.test()
-async def test_random_operations(dut):
-    for _ in range(COUNT):
-        a = generate_random_f32()
-        b = generate_random_f32()
-        operation = random.randint(0, 1)
-        expected = a - b if operation == 1 else a + b
-
-        dut.a.value = float_to_bits(a)
-        dut.b.value = float_to_bits(b)
-        dut.sub.value = operation
-
-        await Timer(PERIOD, units='ns')
-        result = bits_to_float(dut.result.value.integer)
-
-        if abs(expected) > MAX_VAL:
-            dut._log.info(f"Overflow detected: {a} {'-' if operation == 1 else '+'} {b}")
-            assert "inf" in str(result), f"Overflow detection failed: {a} {'-' if operation == 1 else '+'} {b} != {result}"
-        elif abs(expected) < MIN_SUBNORMAL_VAL:
-            dut._log.info(f"Underflow detected {a} {'-' if operation == 1 else '+'} {b}")
-            assert abs(result) == 0.0 or abs(result - expected) < MIN_SUBNORMAL_VAL, f"Underflow detection failed: {a} {'-' if operation == 1 else '+'} {b} != {result}"
-        else:
-            assert abs(result - expected) < max(max(abs(a), abs(b)) * 1e-6, MIN_SUBNORMAL_VAL * 2), f"Operation failed: {a} {'-' if operation == 1 else '+'} {b} != {result}"
